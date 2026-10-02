@@ -1,23 +1,43 @@
+import { trueCost } from '../data'
+
 export function phoneSummary(state) {
   if (state.scenario === 1) {
-    if (state.mode === 'legacy') return { total: 94.6, count: 4, savings: 'Standard overseas shipping: $4.50' }
-    if (state.winnerPicked) return { total: state.winnerPrice, count: 1, savings: 'Showdown Promo: -$3.00 applied' }
-    return { total: 19.9, count: 1, savings: 'Decision Engine preview: $19.90' }
+    const cart = state.carts?.[1] ?? []
+    const items = cart.reduce((sum, item) => sum + item.price * item.qty, 0)
+    const count = cart.reduce((sum, item) => sum + item.qty, 0)
+    if (state.mode === 'legacy') return { ...trueCost({ items, shipping: count ? 4.5 : 0 }), total: items + (count ? 4.5 : 0), count, savings: count ? 'Shipping visible: $4.50' : 'Cart is empty' }
+    if (state.winnerPicked) return { ...trueCost({ items: state.winnerPrice }), count: 1, savings: 'True cost • delivery included' }
+    return { ...trueCost({ items: count ? items : 0 }), count, savings: count ? 'AI preview • delivery included' : 'Add an item to get a recommendation' }
   }
 
   if (state.mode === 'legacy') {
+    const shipping = cartShipping(state)
+    const serviceFee = cartCount(state) ? 1.3 : 0
     return {
-      total: state.purged ? 0 : 15,
-      count: state.purged ? 0 : 3,
+      ...trueCost({ items: state.purged ? 0 : cartSubtotal(state), shipping: state.purged ? 0 : shipping, serviceFee: state.purged ? 0 : serviceFee }),
+      total: state.purged ? 0 : cartSubtotal(state) + shipping + serviceFee,
+      count: state.purged ? 0 : cartCount(state),
       savings: state.purged ? 'Cart is empty' : 'Shipping revealed at checkout',
     }
   }
 
   return {
-    total: 15,
-    count: 3,
+    ...trueCost({ items: cartSubtotal(state), shipping: state.consolidated ? 0 : cartShipping(state) }),
+    count: cartCount(state),
     savings: state.consolidated ? 'Single Hub: FREE SHIPPING ($0.00)' : 'Split shipping detected: +$12.50',
   }
+}
+
+function cartSubtotal(state) {
+  return (state.carts?.[2] ?? []).reduce((sum, item) => sum + item.price * item.qty, 0)
+}
+
+function cartCount(state) {
+  return (state.carts?.[2] ?? []).reduce((sum, item) => sum + item.qty, 0)
+}
+
+function cartShipping(state) {
+  return (state.carts?.[2] ?? []).reduce((sum, item) => sum + item.fee, 0)
 }
 
 const gauge = (label, text, value, tone) => ({ label, text, value, tone })

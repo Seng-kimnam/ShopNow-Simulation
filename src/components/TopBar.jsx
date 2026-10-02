@@ -23,8 +23,7 @@ export function TopBar({
             </span>
           </div>
           <p className="text-xs font-medium text-slate-500">
-            Authentic Marketplace UI • Decision Head-to-Head • Split Fee
-            Optimizer
+            Smart Choice + True Cost • AI recommendations • Live landed pricing
           </p>
         </div>
       </div>
